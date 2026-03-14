@@ -9,22 +9,26 @@ public class BoundedBlockingQueue<T> {
     private final int capacity;
     private final Object monitor;
 
-    public BoundedBlockingQueue(int capacity) throws InterruptedException {
+    public BoundedBlockingQueue(int capacity) {
         if (capacity > 0) {
             this.capacity = capacity;
             monitor = new Object();
         } else {
-            throw new InterruptedException("Capacity is zero");
+            throw new IllegalArgumentException("Capacity is zero");
         }
     }
 
-    public void put(T item) throws InterruptedException {
+    public void put(T item) {
         if (item == null) {
             throw new NullPointerException("Item is null");
         }
         synchronized (monitor) {
             while (size == capacity) {
-                monitor.wait();
+                try {
+                    monitor.wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             q.add(item);
             size++;
@@ -32,10 +36,14 @@ public class BoundedBlockingQueue<T> {
         }
     }
 
-    public T take() throws InterruptedException {
+    public T take() {
         synchronized (monitor) {
             while (size == 0) {
-                monitor.wait();
+                try {
+                    monitor.wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             T value = q.remove();
             size--;
@@ -45,7 +53,7 @@ public class BoundedBlockingQueue<T> {
     }
 
     public int size() {
-        synchronized (monitor){
+        synchronized (monitor) {
             monitor.notify();
             return size;
         }
